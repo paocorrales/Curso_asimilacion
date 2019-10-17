@@ -20,17 +20,15 @@ library(MASS)
 Un tipo de proceso estocástico Markoviano es el modelo AR(1) o autorregresivo de orden 1.
 
 
-\begin{cases} 
-X(t_1) = 0 \\ 
-X(t_i)=\alpha X(t_{i-1})+\epsilon(t_i), \quad 0<|\alpha|<1, \quad i=2,3,...,T 
-\end{cases}
+$$ X(t_1) = 0 $$
+$$X(t_i)=\alpha X(t_{i-1})+\epsilon(t_i) \quad 0<|\alpha|<1, \quad i=2,3,...,T $$
 
 Donde $\epsilon(t_i)\sim \mathcal{N}(0,\sigma^2)$ es un proceso de ruido blanco Gaussiano
 
 
 Una realización de este proceso estocástico es una caminata aleatoria.
 
-* Codificar una función _proc_ar_1_ que devuelva una realización de este proceso durante _T_ pasos de tiempo. La función debe recibir  los parámetros $\alpha$ y $\sigma$.
+* Codificar una función que devuelva una realización de este proceso durante _T_ pasos de tiempo. La función debe recibir  los parámetros $\alpha$ y $\sigma$.
 
 * Generar una serie de tiempo para T=500 pasos de tiempo usando parámetros $\alpha=0.95$ y $\sigma=1$. Evalúe combinaciones de estos parámetros con $\alpha=0.5$  y $\sigma=0.1$. ¿Qué efecto tiene el parámetro $\alpha$?
 
