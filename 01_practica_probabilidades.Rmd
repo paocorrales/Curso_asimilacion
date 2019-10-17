@@ -1,0 +1,322 @@
+---
+title: "01_practica_probabilidades"
+author: "Pao"
+date: "October 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(MASS)
+```
+
+# Curso de Asimilación de Datos (DCAO 2019)
+
+## Ejercicio 1 - Probabilidades
+
+Defina una función que repita n veces el lanzamiento de un dado y devuelva como resultado un vector (np.array) con los n numeros enteros obtenidos. La función debe recibir como argumento el número de repeticiones del experimento.
+
+```{r}
+lanzamiento_dados <- function(n) {
+  out <- sample(1:6, n, replace = T) %>% 
+    as_tibble() %>% 
+    mutate(try = n)
+  return(out)
+}
+```
+
+```{r}
+lanzamiento_dados(10000) %>% 
+  ggplot(aes(value)) +
+  geom_bar() +
+  labs(title = "Funciona el lanzamiento de dados!")
+```
+
+Para el lanzamiento de un dado, definimos los siguientes eventos:
+
+    A: Se obtiene un número menor o igual a 2
+
+    B: Se obtiene un número mayor a 3
+
+    C: Se obtiene un número par
+
+*Pregunta 1:* ¿Cuál es la probabilidad de cada uno de estos eventos?
+
+Haciendo las cuentas teóricas:
+
+- p(A) = 0.33'
+- p(B) = 0.5
+- p(C) = 0.5
+
+*Pregunta 2:* ¿Cuáles de estos eventos son excluyentes?
+
+Los eventos excluyentes son A y B.
+
+La definición frecuentista de probabilidad, indica que podemos establecer la probabilidad empírica de un evento aleatorio mediante la observación de resultados tras repetir muchas veces un experimento aleatorio. La probabilidad empírica de un evento será el número de veces en los que el experimento arrojó como resultado al evento en cuestión, divido la cantidad de veces en las que repetimos el experimento.
+
+### Evento A
+
+Utilizando la función `lanzamiento_dados()` definida anteriormente, calcule la probabilidad empírica del suceso A. Verifique con los resultados teóricos.
+
+```{r}
+n <- 1000
+dados <- lanzamiento_dados(n)
+
+p_A <- dados %>% 
+  filter(value <= 2) %>% 
+  group_by(try) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/n)
+``` 
+
+La probabilidad empírica de que el dado sea menor o igual a 2 es `r p_A[["probabilidad"]]`. Casi pero no, cambia de alguna manera para la cantidad de lanzamiento de dados, veamos eso.
+
+¿Cuántas veces repitió el experimento? Realice un gráfico sencillo mostrando cómo varía la probabilidad de cada suceso, en función del número de repeticiones.
+
+```{r}
+n <- c(10, 100, 1000, 10000, 100000, 1000000, 10000000)
+
+map_dfr(n, lanzamiento_dados) %>% 
+  group_by(try) %>% 
+  filter(value <= 2) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try) %>% 
+  ggplot(aes(factor(try), probabilidad)) +
+  geom_point() +
+  labs(title = "Probabilidad de que el dado sea menor o igual a 2",
+       x = "Intentos")
+```
+
+### Evento B
+
+```{r}
+n <- 1000
+dados <- lanzamiento_dados(n)
+
+p_B <- dados %>% 
+  filter(value > 3) %>% 
+  group_by(try) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try)
+```
+
+La probabilidad de que el dado sea mayor a 3 es `r p_B[["probabilidad"]]`. Veamos si nos acercamos a la probabilidad real aumentando la cantidad de intentos.
+
+```{r}
+n <- c(10, 100, 1000, 10000, 100000, 1000000, 10000000)
+
+map_dfr(n, lanzamiento_dados) %>% 
+  group_by(try) %>% 
+  filter(value > 3) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try) %>% 
+  ggplot(aes(factor(try), probabilidad)) +
+  geom_point() +
+  labs(title = "Probabilidad de que el dado sea mayor a 3",
+       x = "Intentos")
+```
+
+Parece que se empieza a estabilizar a partir de ~1000 intentos. Debería haber seteado una semilla!
+
+### Evento C
+
+```{r}
+n <- 1000
+dados <- lanzamiento_dados(n)
+
+p_C <- dados %>% 
+  filter((value %% 2 ) == 0) %>% 
+  group_by(try) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try)
+```
+
+La probabilidad de que sean pares es `r p_C[["probabilidad"]]`.
+
+```{r}
+n <- c(10, 100, 1000, 10000, 100000, 1000000, 10000000)
+
+map_dfr(n, lanzamiento_dados) %>% 
+  group_by(try) %>% 
+  filter((value %% 2 ) == 0) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try) %>% 
+  ggplot(aes(factor(try), probabilidad)) +
+  geom_point() +
+  labs(title = "Probabilidad de que el dado sea par",
+       x = "Intentos")
+```
+
+
+- Verifique empíricamente que los sucesos A y C son independientes.
+
+Los sucesos son independientes cuando $P(A \cap B) = P(A).P(B)$
+
+```{r}
+n <- 1000
+dados <- lanzamiento_dados(n)
+
+p_AB <- dados %>% 
+  filter(value <= 2 & value > 3) %>% 
+  group_by(try) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try)
+```
+
+Independientes: `r p_A[[3]]*p_B[[3]] == p_AB[[3]]`
+
+- Verifique empíricamente que los seucesos B y C no son independientes
+
+```{r}
+n <- 1000
+dados <- lanzamiento_dados(n)
+
+p_BC <- dados %>% 
+  filter(value > 3 | (value %% 2) == 0) %>% 
+  group_by(try) %>% 
+  summarise(frec = n()) %>% 
+  mutate(probabilidad = frec/try)
+```
+
+## Ejercicio 3 - Distribución Normal y Teorema de Bayes
+
+Evalúe la evolución de la media muestral y la varianza muestral en función del tamaño de la muestra, hasta n=50. (Guardar la muestra en un vector para utilizar más adelante)
+
+```{r}
+n <- seq(1:100)
+set.seed(1234)
+
+mean_var <- function(n) {
+  muestra <- rnorm(n, mean = 5, sd = 2)
+  media <- mean(muestra)
+  var <- var(muestra)
+  tibble(n, media, var)
+}
+
+dist <- map_dfr(n, mean_var) %>% 
+  pivot_longer(cols = c("media", "var"), "estadistico")
+  
+
+dist %>% 
+  ggplot(aes(n, value)) +
+  geom_line(aes(color = estadistico))
+```
+
+Grafique los resultados en un histograma
+
+```{r}
+dist %>% 
+  ggplot(aes(value)) +
+  geom_histogram() +
+  facet_wrap(~estadistico)
+```
+
+La función de densidad de probabilidad para una variable aleatoria Gaussiana es:
+$$ p(x) = \frac{1}{\sigma\sqrt{2 \pi}} e^{-\frac{(x-\mu)^2}{2 \sigma^2}} \,  $$
+
+Escriba una función que devuelva el valor de $p(x)$ a partir de x
+
+```{r}
+pdf_norm <- function(n, mu, sigma){
+  x <- seq(-10, 10, length.out = n)
+  # p <- (1 / sigma*sqrt(2*pi))*exp(-((x - mu)^2)/2*sigma^2)
+  p <- dnorm(x, mu, sigma)
+  out <- data.frame(p,
+                    x,
+                    mu = mu,
+                    sd = sigma)
+  }
+```
+
+Grafique las siguientes funciones de densidad:
+
+1. $p(x) = \mathcal{N}(-2,\sigma_b^2)$
+2. $p(y|x)= \mathcal{N}(1,\sigma_o^2)$
+
+```{r}
+medias <- c(-2, 1)
+sd <- c(sqrt(2), 1)
+
+args <- list(mu = medias, sigma = sd)
+
+dist <- pmap_dfr(args, pdf_norm, n = 101) %>% 
+  mutate(dist = case_when(mu == -2 ~ "p(x)",
+                          mu == 1 ~ "p(y|x)"))
+
+dist %>% 
+  ggplot(aes(x, p)) +
+  geom_line(aes(color = dist))
+
+```
+
+Computacionalmente, utilizaremos las representaciones discretas de las funciones de densidad en la grilla definida por la variable xx. Realizaremos operaciones entre las pdfs utilizando productos y divisiones punto-a-punto en la grilla.
+
+Podríamos inferir la distribución posterior $p(x|y)$ utilizando el teorema de Bayes:
+$$ p(x|y) = \frac{p(x) \, p(y|x)}{p(y)}$$
+Para esto necesitamos calcular la pdf del denomidador. Esta densidad $p(y)$ no depende de x, por lo que su valor es una constante. De hecho, actúa como un factor de normalización. Halle dicho valor. (Ayuda: Pensar a $p(y)$ como una pdf marginalizada, adaptando estos datos a nuestro contexto de grilla.)
+
+
+```{r}
+dx <- 0.1980198
+p_x <- as.vector(select(filter(dist,  dist == "p(x)"), p))
+p_yx <- as.vector(select(filter(dist,  dist == "p(y|x)"), p))
+
+p_y <- sum(p_x*p_yx)*dx
+
+p_xy <- data.frame(p = (p_x*p_yx)/p_y,
+                   x = select(filter(dist, dist == "p(x)"), x),
+                   mu = NA,
+                   sd = NA,
+                   dist = "p(x|y)")
+dist <- rbind(dist, p_xy)
+
+dist %>% 
+  ggplot(aes(x, p)) +
+  geom_line(aes(color = dist))
+```
+
+## Ejercicio 4 - Distribución Gaussiana multivariada
+
+Tenemos un vector aleatoria $X\in R^3$, con distribución Gaussiana centrada (i.e. media cero) y covarianza Q,
+$$Q=
+\begin{bmatrix}
+4 &2  &-1 \\ 
+ 2& 4 &0 \\ 
+ -1&  0&2 
+\end{bmatrix}
+$$
+
+**Pregunta 1:** ¿Que podemos decir acerca de la variabilidad de  cada una de las variables de $X$?
+
+Podemos verificar realizando scatter plots de una muestra aleatoria de la distribución.
+
+Para las variables $X_1$ y $X_2$, que ocurre con la muestra si la covarianza entre estas variables aumenta o disminuye mucho?
+
+```{r}
+q <- matrix(c(4, 2, -1, 2, 4, 0, -1, 0, 2), ncol = 3)
+medias <- c(0, 0, 0)
+
+x <- as.data.frame(mvrnorm(100, medias, q))
+
+ggplot(x, aes(V2, V3)) +
+  geom_point()
+```
+
+Sea Z una variable aleatoria con distribución Gaussiana, Z∼(0,4I)
+
+* Genere una muestra aleatoria de $Z$ con 100 elementos. 
+* Calcule la covarianza empírica de la muestra y repita el experimento hasta que la matriz de covarianza obtenida sea similar a la covarianza teórica de $Z$.  ¿Que tamaño de muestra seleccionó?
+
+```{r}
+q <- diag(3)
+
+x <- as.data.frame(mvrnorm(100000, medias, q))
+
+cor(x)
+```
+
