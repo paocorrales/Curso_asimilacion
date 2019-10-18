@@ -41,7 +41,7 @@ AR1 <- function(x_0, N, alpha, sigma) {
       epsilon <- rnorm(1, mean = 0, sigma)
       x[i] <- alpha*x_0 + epsilon
     } else {
-      epsilon <- rnorm(1, sigma)
+      epsilon <- rnorm(1, mean = 0, sigma)
       x[i] <- alpha*x[i - 1] + epsilon
     }
   }
@@ -64,7 +64,7 @@ pmap_dfr(args, AR1) %>%
 * Realizar N=5000 simulaciones durante T=100 pasos de tiempo. Verificar empíricamente que la esperanza del proceso tiende a cero para cualquier instante de tiempo $t_i$
 
 ```{r}
-alpha <- rep(0.1, 5000)
+alpha <- rep(0.95, 5000)
 sigma <- rep(1, 5000)
 N <- rep(100, 5000)
 x_0 <- rep(0, 5000)

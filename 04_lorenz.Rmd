@@ -1,0 +1,32 @@
+---
+title: "04_lorenz"
+author: "Pao"
+date: "October 17, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+```
+
+## Lorenz
+
+```{r}
+lorenz <- read_csv("lorenz_63.csv")  
+colnames(lorenz) <-  c("n", "x", "y", "z")
+```
+
+```{r}
+plot_ly(x = lorenz$x, y = lorenz$y, z = lorenz$z, 
+        type = "scatter3d",
+        mode = "lines")
+```
+
+```{r}
+lorenz %>% 
+  ggplot(aes(x, z)) +
+  geom_line()
+```
+

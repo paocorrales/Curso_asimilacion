@@ -1,0 +1,64 @@
+---
+title: "05_interpolacio_optima"
+author: "Pao"
+date: "October 18, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+## Interpolación optima
+
+```{r}
+rho <- function(L, Ld = 1) {
+  (1 + abs(L)/Ld)*exp(-abs(L)/Ld)
+}
+a <- c(0.1, 0.25, 0.5, 1.0)
+L2 <- seq(-4, 4, 0.1)
+
+for (i in 1:length(a)) {
+  error_ana <- 1 - ((1 + a[i])*(rho(-2, 0.2)^2 + rho(L2, 0.2)^2) - 2*rho(-2, 0.2)*rho(L2, 0.2)*rho(-2 + L2, 0.2))/((1 + a[i])^2 - rho(-2 + L2, 0.2)^2)
+  e_ana <- data.frame(L = L2, alpha = rep(a[i], length(L2)), err = error_ana)
+  
+  if (i == 1) {
+    out <- e_ana 
+  } else {
+    out <- rbind(out, e_ana)
+  }
+  
+}
+
+out %>% 
+   ggplot(aes(L, err)) +
+   geom_line(aes(color = alpha, group = alpha))
+
+
+```
+
+```{r}
+a <- c(0.25)
+L2 <- seq(-4, 4, 0.5)
+L1 <- c(0)
+
+for (i in 1:length(L1)) {
+  error_ana <- 1 - ((1 + a)*(rho(L1[i])^2 + rho(L2)^2) - 2*rho(L1[i])*rho(L2)*rho(L1[i] + L2))/((1 + a)^2 - rho(L1[i] + L2)^2)
+  
+  e_ana <- data.frame(L = L2, L1 = rep(L1, length(L2)), alpha = rep(a, length(L2)), err = error_ana)
+  
+  if (i == 1) {
+    out <- e_ana 
+  } else {
+    out <- rbind(out, e_ana)
+  }
+  
+}
+
+out %>% 
+   ggplot(aes(L, err)) +
+   geom_line(aes(color = factor(L1)))
+```
+

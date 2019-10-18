@@ -1,0 +1,78 @@
+---
+title: "03_modelo_Gordon"
+author: "Pao"
+date: "October 17, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(tidyr)
+```
+
+## Gordon
+
+$$ X_k = 0.5 X_{k-1} + 25 X_{k-1} / (1+X_{k-1}^2) + 8\cos(1.2(k-1))+ \epsilon$$
+$$ \epsilon ~ N(0,0) $$
+
+```{r}
+sigma <- 1
+k <- 1000
+x_0 <- 0
+
+gordon <- function(x_0, k, sigma){
+  x <- vector()
+  for (i in seq(k)) {
+    if (i == 1) {
+      epsilon <- rnorm(1, mean = 0, sd = sigma)
+      x[i] <- 0.5*x_0 + (25*x_0) / (1+x_0^2) + 8*cos(1.2*(i-1)) + epsilon
+    } else {
+      epsilon <- rnorm(1, mean = 0, sd = sigma)
+      x[i] <- (0.5*x[i - 1] + 25*x[i - 1]) / (1+x[i - 1]^2) + 8*cos(1.2*(i-1)) + epsilon
+    }
+  }
+  return(data_frame(x_k = x, t = seq(k), sigma = sigma, x_0 = x_0))
+}
+
+gordon(x_0, k, sigma) %>% 
+  ggplot(aes(t, x_k)) +
+  geom_line()
+```
+
+```{r}
+x <- gordon(0, 100, 1)
+
+x_100 <- filter(x, t == 100) %>% 
+  dplyr::select(x_k) %>% 
+  as.numeric()
+sigma_x <- rnorm(1000, 0, 0.01)  
+
+x_100 <- rep(x_100, 1000) + sigma_x
+
+args <- list(
+  x_0 = x_100,
+  k = rep(10, 1000),
+  sigma = rep(1, 1000)
+)
+
+df <- pmap_dfr(args, gordon)
+df %>% 
+  ggplot(aes(t, x_k)) +
+  geom_line(aes(group = x_0))
+
+df %>% 
+  group_by(t) %>% 
+  summarise(media = mean(x_k),
+            sd = sd(x_k)) %>% 
+  pivot_longer(cols = c("media", "sd")) %>% 
+  ggplot(aes(t, value)) +
+    geom_line(aes(color = name))
+
+```
+
+
+
