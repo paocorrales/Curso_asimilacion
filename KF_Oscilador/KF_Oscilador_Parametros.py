@@ -82,9 +82,9 @@ plt.legend()
 # evolución de la matriz de covarianza en este caso. Discuta las diferencias con lo
 # encontrado en el punto anterior.
 # =============================================================================
-pasos = 200
+pasos = 1000
 dt= 0.1
-omega= 2
+
 def oscilador(X_0, omega, dt = 0.1):
     M = np.array([[1 - (dt*omega)**2, dt], [-dt*omega**2, 1]])
     X = M.dot(X_0)
@@ -97,40 +97,52 @@ X_true[0, 0] = 1
 X_true[1, 0] = 1
 
 for k in range(pasos-1):
-    X_true[:, k+1]= M.dot(X_true[:, k])
+    X_true[:, k+1]= oscilador(X_true[:, k], omega = 2)
     
 obs = X_true + np.random.randn(2, pasos)
     
-B = np.zeros ((2, 2, pasos))
-B[:,:,0] = np.array ([[0.1, 0 ], [0 , 0.1]])
+B = np.zeros ((3, 3, pasos))
+B[:,:,0] = np.eye(3)*1
+B[2,2,0] = 0.5
 
-Pa = np.zeros ((2, 2, pasos))
+Pa = np.zeros ((3, 3, pasos))
 
-analisis = np.zeros ((2, pasos))
+ensize = 50
+analisis = np.zeros ((3, pasos, ensize))
 
-fcst= np.zeros ((2, pasos))
-fcst [0,0] = 2
-fcst [0,1] = 1 
+fcst= np.zeros ((3, pasos, ensize))
 
-R = H = B_0 = np.array ([[1, 0 ], [0 , 1]]) 
+R = np.eye(2) 
 H = np.array ([[1, 0, 0], [0 , 1, 0]]) 
 
+fcst [0,0,:] = 2 + np.random.randn(ensize).T
+fcst [1,0,:] = 1 + np.random.randn(ensize).T
+fcst [2,0,:] = 1.5 + 0.1*np.random.randn(ensize).T
+        
 for i in range(pasos-1):
     
-    K = B[:,:,i].dot(H.T).dot(np.linalg.inv(R + H.dot(B[:,:,i]).dot(H.T)))
-    
-    analisis[:, i] = fcst[:, i] + K.dot((obs[:, i]- fcst[:, i]))
-    
-    fcst [:, i + 1]= oscilador(analisis[:,i], omega)
-    
-    Pa [:, :, i] = (np.eye(2) - K.dot(H)).dot(B[:,:,i])
-    
-    B[:, :, i+1] = M.dot(Pa[:,:,i]).dot(M.T)
+    for e in range(ensize):
+        
+        K = B[:,:,i].dot(H.T).dot(np.linalg.inv(R + H.dot(B[:,:,i]).dot(H.T)))
+        
+        analisis[:, i, e] = fcst[:, i, e] + K.dot((obs[:, i] + np.random.randn(2).T - fcst[0:2, i, e]))
+        
+        fcst[0:2,i+1,e] = oscilador(analisis[0:2,i,e], analisis[2,i,e])
+        fcst[2,i+1,e] = analisis[2,i,e]
+        
+#    Pa [:,:,i] = np.cov(analisis[:,i,:], analisis[:,i,:])
+        
+    B[:,:,i+1] = np.cov(fcst[:,i+1,:])
+
+plt.figure()
+plt.title("Omega")
+plt.axhline(y = 2, color = 'k', linestyle = '--')
+plt.plot(analisis[2,0:-1,:])
     
     
 plt.figure()
 plt.title("Posición")
-plt.plot(analisis[0,:])
+plt.plot(analisis[0,:,:])
 plt.plot(X_true[0,:], '--')
 plt.plot(obs[0,:], ".")
 plt.figure()
@@ -138,6 +150,8 @@ plt.title("Velocidad")
 plt.plot(analisis[1,:])
 plt.plot(X_true[1,:], '--')
 plt.plot(obs[1,:], ".")
+
+
 
 plt.figure()
 plt.plot(analisis[0,:] - X_true[0,:], label = "x")
